@@ -1,0 +1,103 @@
+version: "2"
+
+
+services:
+  mariadb:
+    image: wodby/mariadb:10.1-2.1.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: drupal
+      MYSQL_USER: drupal
+      MYSQL_PASSWORD: drupal
+
+  php:
+    image: xenomedia/ea-php:latest
+    environment:
+      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+      DB_HOST: mariadb
+      DB_USER: drupal
+      DB_PASSWORD: drupal
+      DB_NAME: drupal
+      DB_DRIVER: mysql
+      PHP_IDE_CONFIG: serverName=Docker
+      PHP_XDEBUG: 1
+      PHP_XDEBUG_IDEKEY: PHPSTORM
+      PHP_XDEBUG_DEFAULT_ENABLE: 1
+      PHP_XDEBUG_REMOTE_AUTOSTART: 1
+      PHP_XDEBUG_REMOTE_CONNECT_BACK: 0         # This is needed to respect remote.host setting bellow
+      PHP_XDEBUG_REMOTE_HOST: "10.254.254.254"  # You will also need to 'sudo ifconfig lo0 alias 10.254.254.254'
+    volumes:
+     - execadv-sync:/var/www/html:nocopy # Docker-sync for macOS users
+     - execadv-sync:/home/alexeadv:nocopy # Docker-sync for macOS users
+
+  apache:
+    image: wodby/drupal-apache:2.4-1.0.0
+    depends_on:
+      - php
+    environment:
+      APACHE_LOG_LEVEL: debug
+      APACHE_BACKEND_HOST: php
+      APACHE_SERVER_ROOT: /var/www/html/www
+    volumes:
+     - execadv-sync:/var/www/html:nocopy # Docker-sync for macOS users
+    labels:
+      - 'traefik.backend=execadv_apache_1'
+      - 'traefik.port=80'
+      - 'traefik.frontend.rule=Host:execadv.docker.localhost'
+
+  mailhog:
+    image: mailhog/mailhog
+    labels:
+      - 'traefik.backend=execadv_mailhog_1'
+      - 'traefik.port=8025'
+      - 'traefik.frontend.rule=Host:mailhog.execadv.docker.localhost'
+
+#  athenapdf:
+#    image: arachnysdocker/athenapdf-service
+#    environment:
+#      WEAVER_AUTH_KEY: weaver-auth-key
+#      WEAVER_ATHENA_CMD: "athenapdf -S"
+#      WEAVER_MAX_WORKERS: 10
+#      WEAVER_MAX_CONVERSION_QUEUE: 50
+#      WEAVER_WORKER_TIMEOUT: 90
+#      WEAVER_CONVERSION_FALLBACK: false
+
+  testphp:
+    image: wodby/drupal-php:5.6-2.4.3
+    environment:
+      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+      PRESSFLOW_SETTINGS: '{"databases":{"default":{"default":{"database":"drupal","username":"drupal","password":"drupal","host":"mariadb","port":"3306","driver":"mysql","prefix":"","collation":"utf8mb4_general_ci"}}}}'
+      PANTHEON_ENVIRONMENT: local
+      DRUPAL_HASH_SALT: mmm...salty
+      BEHAT_PARAMS: '{"extensions" : {"Behat\\MinkExtension" : {"base_url" : "http://testapache/", "selenium2": { "wd_host": "http://phantomjs:4444/wd/hub"}}, "Drupal\\DrupalExtension" : {"drush" : {"root" : "./www"}}}}'
+    volumes:
+     - execadv-sync:/var/www/html:nocopy # Docker-sync for macOS users
+
+  testapache:
+    image: wodby/drupal-apache:2.4-1.0.0
+    depends_on:
+      - testphp
+    environment:
+      APACHE_LOG_LEVEL: debug
+      APACHE_BACKEND_HOST: testphp
+      APACHE_SERVER_ROOT: /var/www/html/www
+    ports:
+      - "8100:80"
+    volumes:
+     - execadv-sync:/var/www/html:nocopy # Docker-sync for macOS users
+
+
+  phantomjs:
+    image: jribar/node-phantomjs
+    volumes_from:
+      - testphp
+    links:
+      - testapache
+    ports:
+      - 4444
+    entrypoint: phantomjs
+    command: "--webdriver=4444"
+
+volumes:
+  execadv-sync:
+   external: true

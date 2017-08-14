@@ -1,0 +1,30 @@
+version: "2"
+
+services:
+  mariadb:
+    ports:
+      - 32770:3306 # choose port that does not conflict locally. X:3306
+#    volumes:
+#      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
+
+#  adminer:
+#    image: wodby/adminer:4.3-1.1.0
+#    environment:
+#      ADMINER_SALT: adminer-salt
+#    labels:
+#      - 'traefik.backend=adminer'
+#      - 'traefik.port=9000'
+#      - 'traefik.frontend.rule=Host:adminer.execadv.docker.localhost'
+
+#  pma:
+#     image: phpmyadmin/phpmyadmin
+#     environment:
+#       PMA_HOST: mariadb
+#       PMA_USER: drupal
+#       PMA_PASSWORD: drupal
+#       PHP_UPLOAD_MAX_FILESIZE: 1G
+#       PHP_MAX_INPUT_VARS: 1G
+#     labels:
+#       - 'traefik.backend=pma'
+#       - 'traefik.port=80'
+#       - 'traefik.frontend.rule=Host:pma.drupal.docker.localhost'
