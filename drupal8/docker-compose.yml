@@ -26,7 +26,7 @@ services:
       PHP_XDEBUG_REMOTE_CONNECT_BACK: 0         # This is needed to respect remote.host setting bellow
       PHP_XDEBUG_REMOTE_HOST: "10.254.254.254"  # You will also need to 'sudo ifconfig lo0 alias 10.254.254.254'
     volumes:
-     - xenomedia-sync:/var/www/html:nocopy # Docker-sync for macOS users
+     - SITENAME-sync:/var/www/html:nocopy # Docker-sync for macOS users
 
   nginx:
     image: wodby/drupal-nginx:8-1.10-2.1.0
@@ -39,11 +39,11 @@ services:
       NGINX_BACKEND_HOST: php
       NGINX_SERVER_ROOT: /var/www/html/web
     volumes:
-     - xenomedia-sync:/var/www/html:nocopy # Docker-sync for macOS users
+     - SITENAME-sync:/var/www/html:nocopy # Docker-sync for macOS users
     labels:
       - 'traefik.backend=xenodashboard_nginx_1'
       - 'traefik.port=80'
-      - 'traefik.frontend.rule=Host:xenomedia.docker.localhost'
+      - 'traefik.frontend.rule=Host:SITENAME.docker.localhost'
 
 #  pma:
 #    image: phpmyadmin/phpmyadmin
@@ -56,7 +56,7 @@ services:
 #    labels:
 #      - 'traefik.backend=pma'
 #      - 'traefik.port=80'
-#      - 'traefik.frontend.rule=Host:pma.xenomedia.docker.localhost'
+#      - 'traefik.frontend.rule=Host:pma.SITENAME.docker.localhost'
 
   varnish:
     image: wodby/drupal-varnish:4.1-2.1.2
@@ -69,7 +69,10 @@ services:
     labels:
       - 'traefik.backend=varnish'
       - 'traefik.port=6081'
-      - 'traefik.frontend.rule=Host:varnish.xenomedia.docker.localhost'
+      - 'traefik.frontend.rule=Host:varnish.SITENAME.docker.localhost'
+
+ #  redis:
+ #    image: wodby/redis:3.2-2.1.2
 
   # solr:
   #   image: wodby/drupal-solr:8-6.4-2.0.0
@@ -79,14 +82,14 @@ services:
   #   labels:
   #     - 'traefik.backend=solr'
   #     - 'traefik.port=8983'
-  #     - 'traefik.frontend.rule=Host:solr.xenomedia.docker.localhost'
+  #     - 'traefik.frontend.rule=Host:solr.SITENAME.docker.localhost'
 
   mailhog:
     image: mailhog/mailhog
     labels:
       - 'traefik.backend=mailhog'
       - 'traefik.port=8025'
-      - 'traefik.frontend.rule=Host:mailhog.xenomedia.docker.localhost'
+      - 'traefik.frontend.rule=Host:mailhog.SITENAME.docker.localhost'
 
 
  # memcached:
@@ -102,5 +105,5 @@ services:
   #     - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  xenomedia-sync:
+  SITENAME-sync:
    external: true

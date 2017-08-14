@@ -14,7 +14,7 @@ services:
 #    labels:
 #      - 'traefik.backend=adminer'
 #      - 'traefik.port=9000'
-#      - 'traefik.frontend.rule=Host:adminer.execadv.docker.localhost'
+#      - 'traefik.frontend.rule=Host:adminer.SITENAME.docker.localhost'
 
 #  pma:
 #     image: phpmyadmin/phpmyadmin
@@ -27,4 +27,4 @@ services:
 #     labels:
 #       - 'traefik.backend=pma'
 #       - 'traefik.port=80'
-#       - 'traefik.frontend.rule=Host:pma.drupal.docker.localhost'
+#       - 'traefik.frontend.rule=Host:pma.SITENAME.docker.localhost'
