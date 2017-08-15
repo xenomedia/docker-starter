@@ -1,9 +1,11 @@
 version: "2"
+# Copy to docker-compose-dev.yml to use this file.
+# When editing make sure the indention is proper Yaml formatting, 2 spaces per indent
 
 services:
   mariadb:
     ports:
-      - 32770:3306 # choose port that does not conflict locally. X:3306
+#       - 32770:3306 # choose port that does not conflict locally. X:3306
 #    volumes:
 #      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
 

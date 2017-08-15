@@ -2,37 +2,37 @@
 
 use Dflydev\DotAccessData\Data;
 use Symfony\Component\Yaml\Yaml;
-
-    define("TFK_NETWORK", "SITE-NAME");
+    define("TFK_NETWORK", "SITENAME");
     define("GRUNT_PATH", "www/themes/custom/x/bootstrap");
     define("DUMP_FILE", "dump.sql");
-    define("SITENAME", "SITE-NAME");
+    define("SITENAME", "SITENAME");
+
 /**
  * Created by PhpStorm.
  *
  * User: michaelpporter
- * Date: 7/17/17
- * Time: 8:41 AM
+ * Date: 8/14/17
+ * Time: 7:41 AM
  * This is project's console commands configuration for Robo task runner.
  *
  * @see http://robo.li/
  */
-class RoboFile extends \Robo\Tasks {
-
-  const COMPOSE_BIN = 'docker-compose';
-  const DRUPAL_ROOT = __DIR__ . '/www';
-  const DUMP_FILE = __DIR__ . '/dump.sql';
-  const BEHAT_BIN = './vendor/bin/behat';
+class RoboFile extends \Robo\Tasks
+{
+    const COMPOSE_BIN = 'docker-compose';
+    const DRUPAL_ROOT = __DIR__ . '/www';
+    const BEHAT_BIN = './vendor/bin/behat';
+    const TERMINUS_BIN = 'terminus';
 
 
   /**
    * Bring containers up, seed files as needed.
    */
   public function start() {
-    if (!file_exists('www/.htaccess') ||
-      !file_exists('www/sites/default/local.settings.php')
+    if (!file_exists('www/wp-config.php')
     ) {
-      $this->say("Missing .htaccess or local.setting.php");
+      $this->setup();
+      $this->say("Missing wp-config.php site now setup, try start again.");
     }
     else {
       $this->_exec('/usr/bin/osascript DockerStart.scpt');
@@ -62,7 +62,7 @@ class RoboFile extends \Robo\Tasks {
    */
   public function dbSeed() {
     $this->taskFilesystemStack()
-      ->remove('mariadb-init/dump.sql');
+      ->remove('mariadb-init/' . DUMP_FILE);
     $this->backupGet();
   }
 
@@ -74,22 +74,23 @@ class RoboFile extends \Robo\Tasks {
     $this->_exec('mv ~/dbback/' . SITENAME . '.sql mariadb-init/' . DUMP_FILE);
   }
 
-  /**
-   * Run Behat tests. (not complete)
-   */
-  public function test() {
-    $this->taskExec(self::COMPOSE_BIN)
-      ->args(['exec', 'testphp', self::BEHAT_BIN])
-      ->option('colors')
-      ->option('format', 'progress')
-      ->run();
-  }
+    /**
+     * Run Behat tests.
+     */
+    public function test()
+    {
+        $this->taskExec(self::COMPOSE_BIN)
+            ->args(['run', 'testphp', self::BEHAT_BIN])
+            ->option('colors')
+            ->option('format', 'progress')
+            ->run();
+    }
 
   /**
    * Backup database from docker site.
    */
   public function backupDb() {
-    $this->_exec('docker-compose exec --user=82 mariadb /usr/bin/mysqldump -u drupal --password=drupal drupal > mariadb-init/dump.sql');
+    $this->_exec('docker-compose exec --user=82 mariadb /usr/bin/mysqldump -u wordpress --password=wordpress wordpress > mariadb-init/' . DUMP_FILE);
   }
 
   /**
@@ -103,15 +104,53 @@ class RoboFile extends \Robo\Tasks {
    * @param string $drush
    *   Drush command to run, in quotes.
    */
-  public function drush($drush) {
-    $this->_exec("docker-compose exec --user=82 php drush --root=/var/www/html/www " . $drush);
+  public function wp($wp) {
+    $this->_exec("docker-compose exec --user=82 php wp --path=/var/www/html/www " . $wp);
+  }
+
+    /**
+     * Bring containers up, seed files as needed.
+     */
+    public function up()
+    {
+        if (!file_exists('mariadb-init/' . DUMP_FILE) ||
+            !file_exists('www/wp-config.php')
+        ) {
+            $this->setup();
+        }
+
+        $this->_exec(self::COMPOSE_BIN . ' up -d');
+    }
+
+    /**
+     * Seed database, shim in settings.local.php
+     */
+    public function setup()
+    {
+      $this->_exec('cp www/default.wp-config.php www/wp-config.php');
+      // $this->npmInstall();
+      // $this->composerInstall();
+      $this->dbSeed();
+    }
+
+  /**
+   * Build Drush tasks with common arguments.
+   * @return $this
+   */
+  private function npmInstall()
+  {
+    return $this->taskNpmInstall()
+      ->dir(GRUNT_PATH)
+      ->run();
   }
 
   /**
-   * Open Deploy Page.
+   * Build Drush tasks with common arguments.
+   * @return $this
    */
-  public function jenkins() {
-    $this->_exec('open https://jenkins4.xenostaging.com/job/drupal-7/job/'.SITENAME.'-multi-branch/job/master/');
+  private function composerInstall()
+  {
+    $this->taskComposerInstall()->run();
   }
 
   /**
@@ -215,22 +254,12 @@ class RoboFile extends \Robo\Tasks {
     }
     $exists = $data->has('networks.'.TFK_NETWORK.'.external.name');
     if ($exists) {
-      $data->remove('networks.'.TFK_NETWORK);
+      $data->remove('networks.' . TFK_NETWORK);
     }
     $yaml = Yaml::dump($data->export(), 5);
 
     file_put_contents('../traefik.yml', $yaml);
     $this->_exec("docker-compose -f ../traefik.yml up -d");
-  }
-
-  /**
-   * Watch files for change and clear cache.
-   */
-  public function watch() {
-    $this->taskWatch()
-      ->monitor('www/sites/all/modules/custom/digital_adoption_index/css/digital_adoption_index_reports.css', function () {
-        $this->_exec('docker-compose exec --user=82 php drush --root=/var/www/html/www cc css-js');
-      })->run();
   }
 
   public function dockerClean() {
@@ -239,4 +268,5 @@ class RoboFile extends \Robo\Tasks {
       $this->_exec('docker-sync-stack clean');
     }
   }
+
 }
