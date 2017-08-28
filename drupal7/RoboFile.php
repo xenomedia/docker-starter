@@ -182,15 +182,15 @@ class RoboFile extends \Robo\Tasks {
 
     $exists = $data->get('services.traefik.networks');
     if ($exists) {
-      if (!in_array(TFK_NETWORK, $exists)) {
-        $exists[] = TFK_NETWORK;
+      if (!in_array('execadv', $exists)) {
+        $exists[] = 'execadv';
       }
       $exists = array_values($exists);
       $data->set('services.traefik.networks', $exists);
     }
-    $exists = $data->has('networks.'.TFK_NETWORK.'.external.name');
+    $exists = $data->has('networks.execadv.external.name');
     if (!$exists) {
-      $data->set('networks.'.TFK_NETWORK.'.external.name', TFK_NETWORK.'_default');
+      $data->set('networks.execadv.external.name', 'execadv_default');
     }
 
     $yaml = Yaml::dump($data->export(), 5);
@@ -207,15 +207,15 @@ class RoboFile extends \Robo\Tasks {
     $data = new Data($yml);
     $exists = $data->get('services.traefik.networks');
     if ($exists) {
-      if (($key = array_search(TFK_NETWORK, $exists)) !== FALSE) {
+      if (($key = array_search('execadv', $exists)) !== FALSE) {
         unset($exists[$key]);
       }
       $exists = array_values($exists);
       $data->set('services.traefik.networks', $exists);
     }
-    $exists = $data->has('networks.'.TFK_NETWORK.'.external.name');
+    $exists = $data->has('networks.execadv.external.name');
     if ($exists) {
-      $data->remove('networks.'.TFK_NETWORK);
+      $data->remove('networks.execadv');
     }
     $yaml = Yaml::dump($data->export(), 5);
 
@@ -224,19 +224,29 @@ class RoboFile extends \Robo\Tasks {
   }
 
   /**
-   * Watch files for change and clear cache.
+   * Check for Docker network, create if not there.
    */
-  public function watch() {
-    $this->taskWatch()
-      ->monitor('www/sites/all/modules/custom/digital_adoption_index/css/digital_adoption_index_reports.css', function () {
-        $this->_exec('docker-compose exec --user=82 php drush --root=/var/www/html/www cc css-js');
-      })->run();
+  public function dockerNetwork() {
+    $result = $this->taskExec('docker network ls | grep ' . TFK_NETWORK)->run();
+    if ($result->wasSuccessful()) {
+      $result->provideOutputdata();
+      $this->say($result->wasSuccessful());
+      $this->tfkSetup();
+    }
+    else {
+      $this->_exec('docker network create -d bridge ' . TFK_NETWORK . '_default');
+      $this->dockerNetwork();
+    }
   }
 
+  /**
+   * Remove containers and volumes, only when you ar done with the project.
+   */
   public function dockerClean() {
     $name = $this->confirm("This will remove all containers and volumes. Are you sure?");
     if ($name) {
       $this->_exec('docker-sync-stack clean');
     }
   }
+
 }
