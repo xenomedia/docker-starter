@@ -2,10 +2,21 @@
 
 use Dflydev\DotAccessData\Data;
 use Symfony\Component\Yaml\Yaml;
-    define("TFK_NETWORK", "SITENAME");
-    define("GRUNT_PATH", "www/themes/custom/x/bootstrap");
-    define("DUMP_FILE", "dump.sql");
-    define("SITENAME", "SITENAME");
+
+// Folder name without dashes, xeno-dashboard becomes xenodashboard.
+define("TFK_NETWORK", "foldernamenodashes");
+// Leave blank if not using grunt.
+define("GRUNT_PATH", "");
+// Leave as dump.sql.
+define("DUMP_FILE", "dump.sql");
+// Path to the site root; i.e. '/', '/web' or '/www'.
+define("WP_ROOT", __DIR__ . '/');
+// Name of the dbbackup file.
+define("SITENAME", "obchamber");
+define("COMPOSE_BIN", "docker-compose");
+// Path to behat, within the project.
+define("BEHAT_BIN", "./vendor/bin/behat");
+define("TERMINUS_BIN", "terminus");
 
 /**
  * Created by PhpStorm.
@@ -17,25 +28,19 @@ use Symfony\Component\Yaml\Yaml;
  *
  * @see http://robo.li/
  */
-class RoboFile extends \Robo\Tasks
-{
-    const COMPOSE_BIN = 'docker-compose';
-    const DRUPAL_ROOT = __DIR__ . '/www';
-    const BEHAT_BIN = './vendor/bin/behat';
-    const TERMINUS_BIN = 'terminus';
-
+class RoboFile extends \Robo\Tasks {
 
   /**
    * Bring containers up, seed files as needed.
    */
   public function start() {
-    if (!file_exists('www/wp-config.php')
+    if (!file_exists(WP_ROOT . '/wp-config.php')
     ) {
       $this->setup();
       $this->say("Missing wp-config.php site now setup, try start again.");
     }
     else {
-      $this->_exec('/usr/bin/osascript DockerStart.scpt');
+      $this->_exec('/usr/bin/osascript DockerStart.scpt ' . GRUNT_PATH);
       $this->dockerNetwork();
     }
   }
@@ -44,7 +49,7 @@ class RoboFile extends \Robo\Tasks
    * Backup Database, Stop containers and cleanup network.
    */
   public function stop() {
-    $this->backupDb();
+    $this->dbBackup();
     $this->halt();
   }
 
@@ -58,39 +63,22 @@ class RoboFile extends \Robo\Tasks
   }
 
   /**
-   * Move backup to mariadb-init for initial load.
+   * Copy default wp-config.php and get the database from stage.
    */
-  public function dbSeed() {
-    $this->taskFilesystemStack()
-      ->remove('mariadb-init/' . DUMP_FILE);
-    $this->backupGet();
+  public function setup() {
+    $this->_exec('cp ' . WP_ROOT . '/default.wp-config.php ' . WP_ROOT . '/wp-config.php');
+    $this->dbSeed();
   }
 
   /**
-   * Pull live database from last nights backup.
+   * Run Behat tests.
    */
-  public function backupGet() {
-    $this->_exec('getdb.sh ' . SITENAME);
-    $this->_exec('mv ~/dbback/' . SITENAME . '.sql mariadb-init/' . DUMP_FILE);
-  }
-
-    /**
-     * Run Behat tests.
-     */
-    public function test()
-    {
-        $this->taskExec(self::COMPOSE_BIN)
-            ->args(['run', 'testphp', self::BEHAT_BIN])
-            ->option('colors')
-            ->option('format', 'progress')
-            ->run();
-    }
-
-  /**
-   * Backup database from docker site.
-   */
-  public function backupDb() {
-    $this->_exec('docker-compose exec --user=82 mariadb /usr/bin/mysqldump -u wordpress --password=wordpress wordpress > mariadb-init/' . DUMP_FILE);
+  public function test() {
+    $this->taskExec('docker')
+      ->args(['run', 'testphp', self::BEHAT_BIN])
+      ->option('colors')
+      ->option('format', 'progress')
+      ->run();
   }
 
   /**
@@ -101,56 +89,43 @@ class RoboFile extends \Robo\Tasks
    *  robo wp 'wp cron test'
    *
    * @param string $wp
-   *   wp command to run, in quotes.
+   *   WP command to run, in quotes.
    */
   public function wp($wp) {
-    $this->_exec("docker-compose exec --user=82 php wp --path=/var/www/html/www " . $wp);
+    $this->_exec("docker exec --user=82 php wp --path=/var/www/html/www " . $wp);
   }
 
-    /**
-     * Bring containers up, seed files as needed.
-     */
-    public function up()
-    {
-        if (!file_exists('mariadb-init/' . DUMP_FILE) ||
-            !file_exists('www/wp-config.php')
-        ) {
-            $this->setup();
-        }
-
-        $this->_exec(self::COMPOSE_BIN . ' up -d');
-    }
-
-    /**
-     * Seed database, shim in settings.local.php
-     */
-    public function setup()
-    {
-      $this->_exec('cp www/default.wp-config.php www/wp-config.php');
-      // $this->npmInstall();
-      // $this->composerInstall();
-      $this->dbSeed();
-    }
+  /* **********************************************************************
+   * Database section.
+   ********************************************************************** */
 
   /**
-   * Build Drush tasks with common arguments.
-   * @return $this
+   * Backup database from docker site.
    */
-  private function npmInstall()
-  {
-    return $this->taskNpmInstall()
-      ->dir(GRUNT_PATH)
-      ->run();
+  public function dbBackup() {
+    $this->_exec('docker exec --user=82 mariadb /usr/bin/mysqldump -u wordpress --password=wordpress wordpress > mariadb-init/' . DUMP_FILE);
   }
 
   /**
-   * Build Drush tasks with common arguments.
-   * @return $this
+   * Pull live database from last nights backup.
    */
-  private function composerInstall()
-  {
-    $this->taskComposerInstall()->run();
+  public function dbGet() {
+    $this->_exec('getdb.sh ' . SITENAME);
+    $this->_exec('mv ~/dbback/' . SITENAME . '.sql mariadb-init/' . DUMP_FILE);
   }
+
+  /**
+   * Move backup to mariadb-init for initial load.
+   */
+  public function dbSeed() {
+    $this->taskFilesystemStack()
+      ->remove('mariadb-init/' . DUMP_FILE);
+    $this->dbGet();
+  }
+
+  /* **********************************************************************
+   * Git section.
+   ********************************************************************** */
 
   /**
    * Cherry pick current branch to master.
@@ -210,57 +185,9 @@ class RoboFile extends \Robo\Tasks
     return $collection;
   }
 
-
-  /**
-   * Add network from treafik and restart.
-   */
-  public function tfkSetup() {
-
-    $yml = Yaml::parse(file_get_contents('../traefik.yml'));
-    $data = new Data($yml);
-
-    $exists = $data->get('services.traefik.networks');
-    if ($exists) {
-      if (!in_array('execadv', $exists)) {
-        $exists[] = 'execadv';
-      }
-      $exists = array_values($exists);
-      $data->set('services.traefik.networks', $exists);
-    }
-    $exists = $data->has('networks.execadv.external.name');
-    if (!$exists) {
-      $data->set('networks.execadv.external.name', 'execadv_default');
-    }
-
-    $yaml = Yaml::dump($data->export(), 5);
-
-    file_put_contents('../traefik.yml', $yaml);
-    $this->_exec("docker-compose -f ../traefik.yml up -d");
-  }
-
-  /**
-   * Remove network from treafik and restart.
-   */
-  public function tfkClean() {
-    $yml = Yaml::parse(file_get_contents('../traefik.yml'));
-    $data = new Data($yml);
-    $exists = $data->get('services.traefik.networks');
-    if ($exists) {
-      if (($key = array_search('execadv', $exists)) !== FALSE) {
-        unset($exists[$key]);
-      }
-      $exists = array_values($exists);
-      $data->set('services.traefik.networks', $exists);
-    }
-    $exists = $data->has('networks.execadv.external.name');
-    if ($exists) {
-      $data->remove('networks.execadv');
-    }
-    $yaml = Yaml::dump($data->export(), 5);
-
-    file_put_contents('../traefik.yml', $yaml);
-    $this->_exec("docker-compose -f ../traefik.yml up -d");
-  }
+  /* **********************************************************************
+   * Docker section.
+   ********************************************************************** */
 
   /**
    * Check for Docker network, create if not there.
@@ -279,16 +206,6 @@ class RoboFile extends \Robo\Tasks
   }
 
   /**
-   * Watch files for change and clear cache.
-   */
-  public function watch() {
-    $this->taskWatch()
-      ->monitor('www/sites/all/modules/custom/digital_adoption_index/css/digital_adoption_index_reports.css', function () {
-        $this->_exec('docker-compose exec --user=82 php drush --root=/var/www/html/www cc css-js');
-      })->run();
-  }
-
-  /**
    * Remove containers and volumes, only when you ar done with the project.
    */
   public function dockerClean() {
@@ -296,6 +213,61 @@ class RoboFile extends \Robo\Tasks
     if ($name) {
       $this->_exec('docker-sync-stack clean');
     }
+  }
+
+  /* **********************************************************************
+   * Traefik section.
+   ********************************************************************** */
+
+  /**
+   * Add network from treafik and restart.
+   */
+  public function tfkSetup() {
+
+    $yml = Yaml::parse(file_get_contents('../traefik.yml'));
+    $data = new Data($yml);
+
+    $exists = $data->get('services.traefik.networks');
+    if ($exists) {
+      if (!in_array(TFK_NETWORK, $exists)) {
+        $exists[] = TFK_NETWORK;
+      }
+      $exists = array_values($exists);
+      $data->set('services.traefik.networks', $exists);
+    }
+    $exists = $data->has('networks.' . TFK_NETWORK . '.external.name');
+    if (!$exists) {
+      $data->set('networks.' . TFK_NETWORK . '.external.name', TFK_NETWORK . '_default');
+    }
+
+    $yaml = Yaml::dump($data->export(), 5);
+
+    file_put_contents('../traefik.yml', $yaml);
+    $this->_exec("docker-compose -f ../traefik.yml up -d");
+  }
+
+  /**
+   * Remove network from treafik and restart.
+   */
+  public function tfkClean() {
+    $yml = Yaml::parse(file_get_contents('../traefik.yml'));
+    $data = new Data($yml);
+    $exists = $data->get('services.traefik.networks');
+    if ($exists) {
+      if (($key = array_search(TFK_NETWORK, $exists)) !== FALSE) {
+        unset($exists[$key]);
+      }
+      $exists = array_values($exists);
+      $data->set('services.traefik.networks', $exists);
+    }
+    $exists = $data->has('networks.' . TFK_NETWORK . '.external.name');
+    if ($exists) {
+      $data->remove('networks.' . TFK_NETWORK . '');
+    }
+    $yaml = Yaml::dump($data->export(), 5);
+
+    file_put_contents('../traefik.yml', $yaml);
+    $this->_exec("docker-compose -f ../traefik.yml up -d");
   }
 
 }
