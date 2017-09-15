@@ -262,12 +262,11 @@ class RoboFile extends \Robo\Tasks {
     }
     $exists = $data->has('networks.' . TFK_NETWORK . '.external.name');
     if ($exists) {
-      $data->remove('networks.' . TFK_NETWORK . '');
+      $data->remove('networks.' . TFK_NETWORK);
     }
     $yaml = Yaml::dump($data->export(), 5);
 
     file_put_contents('../traefik.yml', $yaml);
     $this->_exec("docker-compose -f ../traefik.yml up -d");
   }
-
 }
