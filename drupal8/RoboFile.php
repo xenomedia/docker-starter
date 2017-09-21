@@ -2,10 +2,12 @@
 
 use Dflydev\DotAccessData\Data;
 use Symfony\Component\Yaml\Yaml;
-    define("TFK_NETWORK", "xenomedia");
-    define("GRUNT_PATH", "web/themes/custom/x/bootstrap");
-    define("DUMP_FILE", "dump.sql");
-    define("SITENAME", "xeno-media");
+
+define("TFK_NETWORK", "xenomedia");
+define("GRUNT_PATH", "web/themes/custom/x/bootstrap");
+define("DUMP_FILE", "dump.sql");
+define("SITENAME", "xeno-media");
+define("DRUPAL_ROOT", __DIR__ . '/');
 
 /**
  * Created by PhpStorm.
@@ -20,7 +22,7 @@ use Symfony\Component\Yaml\Yaml;
 class RoboFile extends \Robo\Tasks
 {
     const COMPOSE_BIN = 'docker-compose';
-    const DRUPAL_ROOT = __DIR__ . '/web';
+
     const BEHAT_BIN = './vendor/bin/behat';
     const TERMINUS_BIN = 'terminus';
 
@@ -238,56 +240,56 @@ class RoboFile extends \Robo\Tasks
     return $collection;
   }
 
-  /**
-   * Add network from treafik and restart.
-   */
-  public function tfkSetup() {
+	/**
+	 * Add network from treafik and restart.
+	 */
+	public function tfkSetup() {
 
-    $yml = Yaml::parse(file_get_contents('../traefik.yml'));
-    $data = new Data($yml);
+		$yml = Yaml::parse(file_get_contents('../traefik.yml'));
+		$data = new Data($yml);
 
-    $exists = $data->get('services.traefik.networks');
-    if ($exists) {
-      if (!in_array('execadv', $exists)) {
-        $exists[] = 'execadv';
-      }
-      $exists = array_values($exists);
-      $data->set('services.traefik.networks', $exists);
-    }
-    $exists = $data->has('networks.execadv.external.name');
-    if (!$exists) {
-      $data->set('networks.execadv.external.name', 'execadv_default');
-    }
+		$exists = $data->get('services.traefik.networks');
+		if ($exists) {
+			if (!in_array(TFK_NETWORK, $exists)) {
+				$exists[] = TFK_NETWORK;
+			}
+			$exists = array_values($exists);
+			$data->set('services.traefik.networks', $exists);
+		}
+		$exists = $data->has('networks.' . TFK_NETWORK . '.external.name');
+		if (!$exists) {
+			$data->set('networks.' . TFK_NETWORK . '.external.name', TFK_NETWORK . '_default');
+		}
 
-    $yaml = Yaml::dump($data->export(), 5);
+		$yaml = Yaml::dump($data->export(), 5);
 
-    file_put_contents('../traefik.yml', $yaml);
-    $this->_exec("docker-compose -f ../traefik.yml up -d");
-  }
+		file_put_contents('../traefik.yml', $yaml);
+		$this->_exec("docker-compose -f ../traefik.yml up -d");
+	}
 
-  /**
-   * Remove network from treafik and restart.
-   */
-  public function tfkClean() {
-    $yml = Yaml::parse(file_get_contents('../traefik.yml'));
-    $data = new Data($yml);
-    $exists = $data->get('services.traefik.networks');
-    if ($exists) {
-      if (($key = array_search('execadv', $exists)) !== FALSE) {
-        unset($exists[$key]);
-      }
-      $exists = array_values($exists);
-      $data->set('services.traefik.networks', $exists);
-    }
-    $exists = $data->has('networks.execadv.external.name');
-    if ($exists) {
-      $data->remove('networks.execadv');
-    }
-    $yaml = Yaml::dump($data->export(), 5);
+	/**
+	 * Remove network from treafik and restart.
+	 */
+	public function tfkClean() {
+		$yml = Yaml::parse(file_get_contents('../traefik.yml'));
+		$data = new Data($yml);
+		$exists = $data->get('services.traefik.networks');
+		if ($exists) {
+			if (($key = array_search(TFK_NETWORK, $exists)) !== FALSE) {
+				unset($exists[$key]);
+			}
+			$exists = array_values($exists);
+			$data->set('services.traefik.networks', $exists);
+		}
+		$exists = $data->has('networks.' . TFK_NETWORK . '.external.name');
+		if ($exists) {
+			$data->remove('networks.' . TFK_NETWORK);
+		}
+		$yaml = Yaml::dump($data->export(), 5);
 
-    file_put_contents('../traefik.yml', $yaml);
-    $this->_exec("docker-compose -f ../traefik.yml up -d");
-  }
+		file_put_contents('../traefik.yml', $yaml);
+		$this->_exec("docker-compose -f ../traefik.yml up -d");
+	}
 
   /**
    * Check for Docker network, create if not there.
