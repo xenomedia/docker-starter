@@ -2,28 +2,28 @@
 
 use Dflydev\DotAccessData\Data;
 use Symfony\Component\Yaml\Yaml;
+use Robo\Tasks;
 
-define("TFK_NETWORK", "SITE-NAME");
-define("GRUNT_PATH", "www/themes/custom/x/bootstrap");
-define("DUMP_FILE", "dump.sql");
-define("SITENAME", "SITE-NAME");
-define("DRUPAL_ROOT", __DIR__ . '/');
 /**
- * Created by PhpStorm.
+ * Robofile Class.
  *
- * User: michaelpporter
- * Date: 7/17/17
- * Time: 8:41 AM
- * This is project's console commands configuration for Robo task runner.
- *
- * @see http://robo.li/
+ * Creates robo command for docker development.
  */
-class RoboFile extends \Robo\Tasks {
+class RoboFile extends Tasks {
 
   const COMPOSE_BIN = 'docker-compose';
+
   const DUMP_FILE = 'dump.sql';
+
   const BEHAT_BIN = './vendor/bin/behat';
 
+  const TFK_NETWORK = 'SITE-NAME';
+
+  const GRUNT_PATH = 'www/themes/custom/x/bootstrap';
+
+  const DRUPAL_ROOT = __DIR__ . '/';
+
+  const SITENAME = 'SITE-NAME';
 
   /**
    * Bring containers up, seed files as needed.
@@ -62,7 +62,7 @@ class RoboFile extends \Robo\Tasks {
    */
   public function dbSeed() {
     $this->taskFilesystemStack()
-      ->remove('mariadb-init/dump.sql');
+      ->remove('mariadb-init/' . self::DUMP_FILE);
     $this->backupGet();
   }
 
@@ -70,8 +70,8 @@ class RoboFile extends \Robo\Tasks {
    * Pull live database from last nights backup.
    */
   public function backupGet() {
-    $this->_exec('getdb.sh ' . SITENAME);
-    $this->_exec('mv ~/dbback/' . SITENAME . '.sql mariadb-init/' . DUMP_FILE);
+    $this->_exec('getdb.sh ' . self::SITENAME);
+    $this->_exec('mv ~/dbback/' . self::SITENAME . '.sql mariadb-init/' . self::DUMP_FILE);
   }
 
   /**
@@ -111,7 +111,7 @@ class RoboFile extends \Robo\Tasks {
    * Open Deploy Page.
    */
   public function jenkins() {
-    $this->_exec('open https://jenkins4.xenostaging.com/job/drupal-7/job/'.SITENAME.'-multi-branch/job/master/');
+    $this->_exec('open https://jenkins4.xenostaging.com/job/drupal-7/job/' . self::SITENAME . '-multi-branch/job/master/');
   }
 
   /**
@@ -172,70 +172,69 @@ class RoboFile extends \Robo\Tasks {
     return $collection;
   }
 
+  /**
+   * Add network from treafik and restart.
+   */
+  public function tfkSetup() {
 
-	/**
-	 * Add network from treafik and restart.
-	 */
-	public function tfkSetup() {
+    $yml = Yaml::parse(file_get_contents('../traefik.yml'));
+    $data = new Data($yml);
 
-		$yml = Yaml::parse(file_get_contents('../traefik.yml'));
-		$data = new Data($yml);
+    $exists = $data->get('services.traefik.networks');
+    if ($exists) {
+      if (!in_array(self::TFK_NETWORK, $exists)) {
+        $exists[] = self::TFK_NETWORK;
+      }
+      $exists = array_values($exists);
+      $data->set('services.traefik.networks', $exists);
+    }
+    $exists = $data->has('networks.' . self::TFK_NETWORK . '.external.name');
+    if (!$exists) {
+      $data->set('networks.' . self::TFK_NETWORK . '.external.name', self::TFK_NETWORK . '_default');
+    }
 
-		$exists = $data->get('services.traefik.networks');
-		if ($exists) {
-			if (!in_array(TFK_NETWORK, $exists)) {
-				$exists[] = TFK_NETWORK;
-			}
-			$exists = array_values($exists);
-			$data->set('services.traefik.networks', $exists);
-		}
-		$exists = $data->has('networks.' . TFK_NETWORK . '.external.name');
-		if (!$exists) {
-			$data->set('networks.' . TFK_NETWORK . '.external.name', TFK_NETWORK . '_default');
-		}
+    $yaml = Yaml::dump($data->export(), 5);
 
-		$yaml = Yaml::dump($data->export(), 5);
+    file_put_contents('../traefik.yml', $yaml);
+    $this->_exec("docker-compose -f ../traefik.yml up -d");
+  }
 
-		file_put_contents('../traefik.yml', $yaml);
-		$this->_exec("docker-compose -f ../traefik.yml up -d");
-	}
+  /**
+   * Remove network from treafik and restart.
+   */
+  public function tfkClean() {
+    $yml = Yaml::parse(file_get_contents('../traefik.yml'));
+    $data = new Data($yml);
+    $exists = $data->get('services.traefik.networks');
+    if ($exists) {
+      if (($key = array_search(self::TFK_NETWORK, $exists)) !== FALSE) {
+        unset($exists[$key]);
+      }
+      $exists = array_values($exists);
+      $data->set('services.traefik.networks', $exists);
+    }
+    $exists = $data->has('networks.' . self::TFK_NETWORK . '.external.name');
+    if ($exists) {
+      $data->remove('networks.' . self::TFK_NETWORK);
+    }
+    $yaml = Yaml::dump($data->export(), 5);
 
-	/**
-	 * Remove network from treafik and restart.
-	 */
-	public function tfkClean() {
-		$yml = Yaml::parse(file_get_contents('../traefik.yml'));
-		$data = new Data($yml);
-		$exists = $data->get('services.traefik.networks');
-		if ($exists) {
-			if (($key = array_search(TFK_NETWORK, $exists)) !== FALSE) {
-				unset($exists[$key]);
-			}
-			$exists = array_values($exists);
-			$data->set('services.traefik.networks', $exists);
-		}
-		$exists = $data->has('networks.' . TFK_NETWORK . '.external.name');
-		if ($exists) {
-			$data->remove('networks.' . TFK_NETWORK);
-		}
-		$yaml = Yaml::dump($data->export(), 5);
-
-		file_put_contents('../traefik.yml', $yaml);
-		$this->_exec("docker-compose -f ../traefik.yml up -d");
-	}
+    file_put_contents('../traefik.yml', $yaml);
+    $this->_exec("docker-compose -f ../traefik.yml up -d");
+  }
 
   /**
    * Check for Docker network, create if not there.
    */
   public function dockerNetwork() {
-    $result = $this->taskExec('docker network ls | grep ' . TFK_NETWORK)->run();
+    $result = $this->taskExec('docker network ls | grep ' . self::TFK_NETWORK)->run();
     if ($result->wasSuccessful()) {
       $result->provideOutputdata();
       $this->say($result->wasSuccessful());
       $this->tfkSetup();
     }
     else {
-      $this->_exec('docker network create -d bridge ' . TFK_NETWORK . '_default');
+      $this->_exec('docker network create -d bridge ' . self::TFK_NETWORK . '_default');
       $this->dockerNetwork();
     }
   }
