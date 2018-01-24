@@ -1,6 +1,6 @@
 FROM wodby/drupal-php:5.6
 
-MAINTAINER      Michael Porter <mp@michaelpporter.com>
+LABEL maintainer="Michael Porter <mp@michaelpporter.com>"
 
 RUN apk --update add \
   apkbuild-cpan \
