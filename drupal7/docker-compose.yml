@@ -1,23 +1,36 @@
 version: "2"
 
-
 services:
   mariadb:
-    image: wodby/mariadb:10.1-2.1.0
+    image: wodby/mariadb:10.2-3.0.2
+    # image: wodby/mariadb:10.1-3.0.2
+    networks:
+      - web
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: drupal
-      MYSQL_USER: drupal
-      MYSQL_PASSWORD: drupal
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
 
   php:
-    image: wodby/drupal-php:5.6-2.4.3
+# 2. Images without Drupal – wodby/drupal-php:[PHP_VERSION]-[STABILITY_TAG].
+    # image: wodby/drupal-php:7.1-3.3.1
+    image: wodby/drupal-php:7.0-3.3.1
+    # image: wodby/drupal-php:5.6-3.3.1
+    # image: wodby/drupal-php:5.3-3.3.1
+# 3. Images without Drupal – wodby/drupal-php:[PHP_VERSION]-[STABILITY_TAG]. Version for development (--enable-debug)
+    # image: wodby/drupal-php:7.1-dev-3.3.1
+    # image: wodby/drupal-php:7.0-dev-3.3.1
+    # image: wodby/drupal-php:5.6-dev-3.3.1
+    # image: wodby/drupal-php:5.3-dev-3.3.1
+    networks:
+      - web
     environment:
       PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
-      DB_HOST: mariadb
-      DB_USER: drupal
-      DB_PASSWORD: drupal
-      DB_NAME: drupal
+      DB_HOST: ${DATABASE_HOST}
+      DB_USER: ${DATABASE_USER}
+      DB_PASSWORD: ${DATABASE_PASSWORD}
+      DB_NAME: ${DATABASE_NAME}
       DB_DRIVER: mysql
       PHP_IDE_CONFIG: serverName=Docker
       # PHP_XDEBUG: 1
@@ -31,12 +44,14 @@ services:
 
 #   nginx:
 # # wodby/drupal-nginx:[DRUPAL_VERSION]-[NGINX_VERSION]-[STABILITY_TAG].
-# #    image: wodby/drupal-nginx:8-1.13-2.4.2
-#      image: wodby/drupal-nginx:7-1.13-2.4.2
-# #    image: wodby/drupal-nginx:6-1.13-2.4.2
-# #    image: wodby/drupal-nginx:8-1.12-2.4.2
-# #    image: wodby/drupal-nginx:7-1.12-2.4.2
-# #    image: wodby/drupal-nginx:6-1.12-2.4.2
+#     # image: wodby/drupal-nginx:8-1.13-2.4.2
+#     image: wodby/drupal-nginx:7-1.13-2.4.2
+#     # image: wodby/drupal-nginx:6-1.13-2.4.2
+#     # image: wodby/drupal-nginx:8-1.12-2.4.2
+#     # image: wodby/drupal-nginx:7-1.12-2.4.2
+#     # image: wodby/drupal-nginx:6-1.12-2.4.2
+#     networks:
+#       - web
 #     depends_on:
 #       - php
 #     environment:
@@ -49,10 +64,12 @@ services:
 #     labels:
 #       - 'traefik.backend=nginx'
 #       - 'traefik.port=80'
-#       - 'traefik.frontend.rule=Host:SITENAME.docker.localhost'
+#       - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}'
 
   apache:
-    image: wodby/drupal-apache:2.4-1.0.0
+    image: wodby/php-apache:2.4-2.0.2
+    networks:
+      - web
     depends_on:
       - php
     environment:
@@ -64,61 +81,56 @@ services:
     labels:
       - 'traefik.backend=SITENAME_apache_1'
       - 'traefik.port=80'
-      - 'traefik.frontend.rule=Host:SITENAME.docker.localhost'
+      - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}'
 
   mailhog:
     image: mailhog/mailhog
+    networks:
+      - web
     labels:
       - 'traefik.backend=SITENAME_mailhog_1'
       - 'traefik.port=8025'
-      - 'traefik.frontend.rule=Host:mailhog.SITENAME.docker.localhost'
+      - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}'
 
-#  athenapdf:
-#    image: arachnysdocker/athenapdf-service
-#    environment:
-#      WEAVER_AUTH_KEY: weaver-auth-key
-#      WEAVER_ATHENA_CMD: "athenapdf -S"
-#      WEAVER_MAX_WORKERS: 10
-#      WEAVER_MAX_CONVERSION_QUEUE: 50
-#      WEAVER_WORKER_TIMEOUT: 90
-#      WEAVER_CONVERSION_FALLBACK: false
+  # athenapdf:
+  #   image: arachnysdocker/athenapdf-service
+  #   networks:
+  #     - web
+  #   environment:
+  #     WEAVER_AUTH_KEY: weaver-auth-key
+  #     WEAVER_ATHENA_CMD: "athenapdf -S"
+  #     WEAVER_MAX_WORKERS: 10
+  #     WEAVER_MAX_CONVERSION_QUEUE: 50
+  #     WEAVER_WORKER_TIMEOUT: 90
+  #     WEAVER_CONVERSION_FALLBACK: false
 
-  testphp:
-    image: wodby/drupal-php:5.6-2.4.3
-    environment:
-      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
-      PRESSFLOW_SETTINGS: '{"databases":{"default":{"default":{"database":"drupal","username":"drupal","password":"drupal","host":"mariadb","port":"3306","driver":"mysql","prefix":"","collation":"utf8mb4_general_ci"}}}}'
-      PANTHEON_ENVIRONMENT: local
-      DRUPAL_HASH_SALT: mmm...salty
-      BEHAT_PARAMS: '{"extensions" : {"Behat\\MinkExtension" : {"base_url" : "http://testapache/", "selenium2": { "wd_host": "http://phantomjs:4444/wd/hub"}}, "Drupal\\DrupalExtension" : {"drush" : {"root" : "./www"}}}}'
-    volumes:
-     - SITENAME-sync:/var/www/html:nocopy # Docker-sync for macOS users
+  # # Selenium
+  # browser:
+  #   hostname: browser
+  #   # Pick/uncomment one
+  #   image: selenium/standalone-chrome
+  #   #image: selenium/standalone-firefox
+  #   networks:
+  #     - web
 
-  testapache:
-    image: wodby/drupal-apache:2.4-1.0.0
-    depends_on:
-      - testphp
-    environment:
-      APACHE_LOG_LEVEL: debug
-      APACHE_BACKEND_HOST: testphp
-      APACHE_SERVER_ROOT: /var/www/html/www
-    ports:
-      - "8100:80"
-    volumes:
-     - SITENAME-sync:/var/www/html:nocopy # Docker-sync for macOS users
-
-
-  phantomjs:
-    image: jribar/node-phantomjs
-    volumes_from:
-      - testphp
-    links:
-      - testapache
-    ports:
-      - 4444
-    entrypoint: phantomjs
-    command: "--webdriver=4444"
+  # phantomjs:
+  #   image: jribar/node-phantomjs
+  #   networks:
+  #     - web 
+  #   volumes_from:
+  #     - testphp
+  #   links:
+  #     - testapache
+  #   ports:
+  #     - 4444
+  #   entrypoint: phantomjs
+  #   command: "--webdriver=4444"
 
 volumes:
   SITENAME-sync:
    external: true
+
+networks:
+  web:
+    external:
+      name: traefik_webgateway

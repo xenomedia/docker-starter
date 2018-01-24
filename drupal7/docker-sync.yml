@@ -7,4 +7,4 @@ syncs:
     src: '.'
     sync_userid: '82'
     # sync_strategy: 'native_osx' # not needed, this is the default now
-    sync_excludes: ['.gitignore', '.git/', '.idea/', 'docs/', 'unused_modules/', 'provisioning/', 'lib/']
+    sync_excludes: ['.gitignore', '.git/', '.idea/', 'docs/', 'provisioning/', 'lib/']
