@@ -6,4 +6,4 @@ syncs:
   SITENAME-sync:
     src: '.'
     sync_userid: '82'
-    sync_excludes: ['.gitignore', '.git/', '.idea/']
+    sync_excludes: ['.gitignore', '.git', '.idea']
