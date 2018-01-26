@@ -1,4 +1,4 @@
-# Wordpress Setup
+# Drupal 7 Setup
 
 ## New Project
 Copy the contents of this folder to a new folder i.e. ~/Sites/new_project
@@ -11,28 +11,28 @@ cd ..
 sed -i -e 's/SITENAME/new_project/g' .env
 sed -i -e 's/SITENAME/new_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/new_project/g' docker-sync.yml
-sed -i -e 's/SITENAME/new_project/g' default.wp-config.php
-# Edit default.wp-config.php to setup the $table_prefix = 'wp_';
-mv default.wp-config.php web/sites/default/default.wp-config.php
+sed -i -e 's/SITENAME/new_project/g' default.local.settings.php
+mv default.local.settings.php web/sites/default/default.local.settings.php
 mv .htaccess.default web/.htaccess.default
 ```
 
 ## Existing Project
 Copy the contents of this folder to a new folder i.e. ~/Sites/existing_project
 
+If your site root is not in the web folder you should move it using `git mv`
+
 ```bash
+mkdir web
 # git mv commands
 sed -i -e 's/SITENAME/existing_project/g' .env
 sed -i -e 's/SITENAME/existing_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/existing_project/g' docker-sync.yml
-sed -i -e 's/SITENAME/existing_project/g' default.wp-config.php
-# Edit default.wp-config.php to setup the $table_prefix = 'wp_';
-mv default.wp-config.php web/sites/default/default.wp-config.php
+sed -i -e 's/SITENAME/existing_project/g' default.local.settings.php
+mv default.local.settings.php web/sites/default/default.local.settings.php
 mv .htaccess.default web/.htaccess.default
 ```
 
 ## Common Commands
-
 Edit robo.yml.dist
 ```yml
 site:
@@ -52,6 +52,7 @@ database:
   database: drupal
   user: drupal
   password: drupal
+
 ```
 
 ```bash

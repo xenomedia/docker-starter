@@ -11,3 +11,7 @@ stage:
   user: # Staging user.
   host: # Staging host.
   backup_location: # backup location.
+database:
+  database: drupal
+  user: drupal
+  password: drupal

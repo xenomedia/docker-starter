@@ -1,4 +1,4 @@
-# Wordpress Setup
+# Drupal 7 Setup
 
 ## New Project
 Copy the contents of this folder to a new folder i.e. ~/Sites/new_project
@@ -11,9 +11,8 @@ cd ..
 sed -i -e 's/SITENAME/new_project/g' .env
 sed -i -e 's/SITENAME/new_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/new_project/g' docker-sync.yml
-sed -i -e 's/SITENAME/new_project/g' default.wp-config.php
-# Edit default.wp-config.php to setup the $table_prefix = 'wp_';
-mv default.wp-config.php web/sites/default/default.wp-config.php
+sed -i -e 's/SITENAME/new_project/g' example.local.settings.php
+mv example.local.settings.php web/sites/default/example.local.settings.php
 mv .htaccess.default web/.htaccess.default
 ```
 
@@ -25,9 +24,8 @@ Copy the contents of this folder to a new folder i.e. ~/Sites/existing_project
 sed -i -e 's/SITENAME/existing_project/g' .env
 sed -i -e 's/SITENAME/existing_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/existing_project/g' docker-sync.yml
-sed -i -e 's/SITENAME/existing_project/g' default.wp-config.php
-# Edit default.wp-config.php to setup the $table_prefix = 'wp_';
-mv default.wp-config.php web/sites/default/default.wp-config.php
+sed -i -e 's/SITENAME/existing_project/g' example.local.settings.php
+mv example.local.settings.php web/sites/default/example.local.settings.php
 mv .htaccess.default web/.htaccess.default
 ```
 
