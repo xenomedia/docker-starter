@@ -57,6 +57,8 @@ $config_directories[CONFIG_SYNC_DIRECTORY] = '../config/sync';
  */
 # $settings['file_private_path'] = '';
 
+$settings['hash_salt'] = 'billydontloosemynumber';
+
 /**
  * Uncomment the environment you are using.
  */
