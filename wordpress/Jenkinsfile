@@ -1,0 +1,130 @@
+#!groovy​
+// Include Xeno Global Library
+@Library(['XENO_JENKINS', 'XENO_DEPLOY']) _
+def getLabel() {
+    // Which server to run this on.
+    return "php[5|7][a-c]"
+}
+// Choose the site name based on git name and if it is a Pull Request or branch.
+def getSitename() {
+    // Set the project name, most likely the git repo name.
+    SITE_NAME = "SITENAME"
+    if (env.CHANGE_BRANCH && !env.CHANGE_FORK){
+        return "${SITE_NAME}-${env.CHANGE_BRANCH.toLowerCase()}"
+    }
+    else{
+        return "${SITE_NAME}-${env.BRANCH_NAME.toLowerCase()}"
+    }
+}
+
+pipeline {
+  environment {
+    // Database backup name
+    X_DB_BACKUP = "SITENAME.sql.gz"
+    // Database User to use on the testing server
+    X_DB_USER = "SITENAME"
+    // The live URL, used for stage file proxy and WP find-replace
+    X_LIVE_DOMAIN = "https://www.SITENAME.com"
+    // Slack IDs for notification.
+    X_SLACK_NOTIFY = "<@hera>"
+    // Slack Channel
+    X_SLACK_CHANNEL = "#jenkins-ci"
+    // Code paths for phpcs checks, space delimited
+    X_CODE = "web/wp-content/plugins"
+    // Code paths for phpcs ignore, comma delimited
+    X_IGNORE = "*advanced-custom-fields*,*all-in-one-seo-pack*"
+    // Prefix
+    X_PREFIX = "cj_"
+  }
+  agent {
+    node {
+      label "${getLabel()}"
+      customWorkspace "/var/www/${getSitename()}"
+    }
+  }
+  options {
+      buildDiscarder(logRotator(numToKeepStr: '7'))
+  }
+  stages {
+    stage("Checkout") {
+      steps {
+      milestone(2)
+        lock (resource: "${getSitename()}", inversePrecedence: true) {
+          checkout scm
+        }
+      }
+    }
+
+    stage("Setup") {
+      when {
+        // Only build if the site is new
+        expression {
+          return !fileExists("/var/www/${getSitename()}/web/.htaccess")
+        }
+      }
+      steps {
+        milestone(5)
+        lock (resource: "${getSitename()}", inversePrecedence: true) {
+          xenoBuildWP( "${getSitename()}", env.X_DB_BACKUP, env.X_DB_USER, env.X_LIVE_DOMAIN, env.X_PREFIX, "${getLabel()}")
+          echo "Build WP Start"
+          sh """
+                cd web
+                wp search-replace 'http://SITENAME.com' 'https://${getSitename()}.xenostaging.com' --skip-columns=guid
+                wp search-replace 'http://www.SITENAME.com' 'https://${getSitename()}.xenostaging.com' --skip-columns=guid
+                wp search-replace 'https://www.SITENAME.com' 'https://${getSitename()}.xenostaging.com' --skip-columns=guid
+                wp plugin install https://github.com/xenomedia/proxy-images/archive/master.zip --activate
+                wp option update pxy_settings '{\"pxy_original_url\":\"${X_LIVE_DOMAIN}/\"}'  --format=json
+            """
+        }
+      }
+    }
+    stage("Tests") {
+        when {
+              not { branch 'jenkins' }
+        }
+        failFast true
+        parallel {
+            stage('Behat') {
+              steps {
+                echo 'Behat Check'
+                // behatD7web("${getSitename()}", "@tags") The site name to update the Bahat scripts with.
+              }
+            }
+            stage('PHPcs') {
+              steps {
+              echo 'PHPcs Check'
+                // phpcs("Wordpress", "${getSitename()}", "${X_CODE}", "${X_IGNORE}")
+              }
+            }
+
+        }
+    }
+    stage ('Deploy Code') {
+        when {
+            branch 'master'
+        }
+        steps {
+        milestone(25)
+          slackNotify("${X_SLACK_NOTIFY}\nReady to review and deploy. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good')
+          script {
+            timeout(time:4, unit:'DAYS') { // expires in 4 days
+                env.APPROVED_BY = input message: 'Deploy to Production?', ok: 'Release!', submitterParameter: 'APPROVER'
+            } // end timeout
+            slackNotify("approved by ${env.APPROVED_BY} and deploy started", "${X_SLACK_CHANNEL}", 'good')
+            // customDeploy("${getSitename()}")
+          }
+        }
+    }
+  }
+  post {
+    success {
+       slackNotify("Build Compete. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'good')
+    }
+    failure {
+       slackNotify("${X_SLACK_NOTIFY}\nBuild Failed. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'danger')
+    }
+    unstable {
+       slackNotify("${X_SLACK_NOTIFY}\nBuild is unstable. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", 'warning')
+    }
+  }
+}
