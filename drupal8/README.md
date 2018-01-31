@@ -1,13 +1,12 @@
-# Drupal 7 Setup
+# Drupal 8 Setup
 
 ## New Project
 Copy the contents of this folder to a new folder i.e. ~/Sites/new_project
 
 ```bash
-mkdir web
-cd web
-drush dl drupal-7 --select
-cd ..
+composer create-project xenomedia/hebe-lite my-site
+cd my-site
+composer prepare-for-pantheon
 sed -i -e 's/SITENAME/new_project/g' .env
 sed -i -e 's/SITENAME/new_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/new_project/g' docker-sync.yml
