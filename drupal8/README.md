@@ -11,7 +11,7 @@ sed -i -e 's/SITENAME/new_project/g' .env
 sed -i -e 's/SITENAME/new_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/new_project/g' docker-sync.yml
 sed -i -e 's/SITENAME/new_project/g' example.local.settings.php
-mv example.local.settings.php web/sites/default/example.local.settings.php
+mv example.local.settings.php web/sites/example.local.settings.php
 mv .htaccess.default web/.htaccess.default
 ```
 
@@ -24,7 +24,7 @@ sed -i -e 's/SITENAME/existing_project/g' .env
 sed -i -e 's/SITENAME/existing_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/existing_project/g' docker-sync.yml
 sed -i -e 's/SITENAME/existing_project/g' example.local.settings.php
-mv example.local.settings.php web/sites/default/example.local.settings.php
+mv example.local.settings.php web/sites/example.local.settings.php
 mv .htaccess.default web/.htaccess.default
 ```
 
