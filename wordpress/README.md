@@ -5,9 +5,6 @@ Copy the contents of this folder to a new folder i.e. ~/Sites/new_project
 
 ```bash
 mkdir web
-cd web
-drush dl drupal-7 --select
-cd ..
 sed -i -e 's/SITENAME/new_project/g' .env
 sed -i -e 's/SITENAME/new_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/new_project/g' docker-sync.yml
