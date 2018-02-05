@@ -10,7 +10,7 @@ sed -i -e 's/SITENAME/new_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/new_project/g' docker-sync.yml
 sed -i -e 's/SITENAME/new_project/g' default.wp-config.php
 # Edit default.wp-config.php to setup the $table_prefix = 'wp_';
-mv default.wp-config.php web/sites/default/default.wp-config.php
+mv default.wp-config.php web/default.wp-config.php
 mv .htaccess.default web/.htaccess.default
 ```
 
@@ -24,7 +24,7 @@ sed -i -e 's/SITENAME/existing_project/g' docker-compose.yml
 sed -i -e 's/SITENAME/existing_project/g' docker-sync.yml
 sed -i -e 's/SITENAME/existing_project/g' default.wp-config.php
 # Edit default.wp-config.php to setup the $table_prefix = 'wp_';
-mv default.wp-config.php web/sites/default/default.wp-config.php
+mv default.wp-config.php web/default.wp-config.php
 mv .htaccess.default web/.htaccess.default
 ```
 
