@@ -11,8 +11,8 @@ services:
       MYSQL_DATABASE: ${DATABASE_NAME}
       MYSQL_USER: ${DATABASE_USER}
       MYSQL_PASSWORD: ${DATABASE_PASSWORD}
-   volumes:
-     - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
+    volumes:
+      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
 
   php:
 	# 2. Images without WordPress – wodby/wordpress-php:[PHP_VERSION]-[STABILITY_TAG].
