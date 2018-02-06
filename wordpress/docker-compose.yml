@@ -15,7 +15,7 @@ services:
       - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
 
   php:
-	# 2. Images without WordPress – wodby/wordpress-php:[PHP_VERSION]-[STABILITY_TAG].
+# 2. Images without WordPress – wodby/wordpress-php:[PHP_VERSION]-[STABILITY_TAG].
 #    image: wodby/wordpress-php:7.2-3.3.1
 #    image: wodby/wordpress-php:7.1-3.3.1
     image: wodby/wordpress-php:7.0-3.3.1
