@@ -1,9 +1,9 @@
 #!groovy​
 // Include Xeno Global Library
-@Library('XENO_JENKINS') _
+@Library(['XENO_JENKINS', 'XENO_DEPLOY']) _
 def getLabel() {
     // Which server to run this on.
-    return "php[5|7][a-c]"
+    return "php[5|7][a-z]"
 }
 // Choose the site name based on git name and if it is a Pull Request or branch.
 def getSitename() {
@@ -16,7 +16,6 @@ def getSitename() {
         return "${SITE_NAME}-${env.BRANCH_NAME.toLowerCase()}"
     }
 }
-
 pipeline {
   environment {
     // Database backup name, if it is not the site name use the known file name
@@ -41,9 +40,13 @@ pipeline {
     }
   }
   options {
+    // do not run more than one build per branch
       disableConcurrentBuilds()
-      lock resource: "${getSitename()}", inversePrecedence: true
-      timeout(time: 1, unit: 'HOURS')
+    // lock based on branch name, pull requests use branch name
+      lock resource: "SITENAME-${getLabel()}", inversePrecedence: true
+    // timeout after 8 hours
+      timeout(time: 8, unit: 'HOURS')
+    // keep 7 jobs
       buildDiscarder(logRotator(numToKeepStr: '7'))
   }
   stages {

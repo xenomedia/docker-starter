@@ -2,10 +2,8 @@ version: "2"
 
 services:
   mariadb:
-    image: wodby/mariadb:10.2-3.0.2
-    # image: wodby/mariadb:10.1-3.0.2
-    networks:
-      - web
+    image: wodby/mariadb:10.2
+    # image: wodby/mariadb:10.1
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DATABASE_NAME}
@@ -13,18 +11,15 @@ services:
       MYSQL_PASSWORD: ${DATABASE_PASSWORD}
 
   php:
-# 2. Images without Drupal – wodby/drupal-php:[PHP_VERSION]-[STABILITY_TAG].
-    # image: wodby/drupal-php:7.1-3.3.1
-    image: wodby/drupal-php:7.0-3.3.1
-    # image: wodby/drupal-php:5.6-3.3.1
-    # image: wodby/drupal-php:5.3-3.3.1
-# 3. Images without Drupal – wodby/drupal-php:[PHP_VERSION]-[STABILITY_TAG]. Version for development (--enable-debug)
-    # image: wodby/drupal-php:7.1-dev-3.3.1
-    # image: wodby/drupal-php:7.0-dev-3.3.1
-    # image: wodby/drupal-php:5.6-dev-3.3.1
-    # image: wodby/drupal-php:5.3-dev-3.3.1
-    networks:
-      - web
+# 1. Images without Drupal – wodby/drupal-php:[PHP_VERSION]-[STABILITY_TAG].
+#    image: wodby/drupal-php:7.1-3.3.1
+#    image: wodby/drupal-php:7.0-3.3.1
+#    image: wodby/drupal-php:5.6-3.3.1
+#    image: wodby/drupal-php:5.3-3.3.1
+# 2. Images without Drupal – wodby/drupal-php:[PHP_VERSION]-[STABILITY_TAG]. Version for development (--enable-debug)
+#    image: wodby/drupal-php:7.1-dev-3.3.1
+#    image: wodby/drupal-php:7.0-dev-3.3.1
+#    image: wodby/drupal-php:5.6-dev-3.3.1
     environment:
       PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
       DB_HOST: ${DATABASE_HOST}
@@ -33,104 +28,50 @@ services:
       DB_NAME: ${DATABASE_NAME}
       DB_DRIVER: mysql
       PHP_IDE_CONFIG: serverName=Docker
-      # PHP_XDEBUG: 1
-      # PHP_XDEBUG_IDEKEY: PHPSTORM
-      # PHP_XDEBUG_DEFAULT_ENABLE: 1
-      # PHP_XDEBUG_REMOTE_AUTOSTART: 1
-      # PHP_XDEBUG_REMOTE_CONNECT_BACK: 0         # This is needed to respect remote.host setting bellow
-      # PHP_XDEBUG_REMOTE_HOST: "10.254.254.254"  # You will also need to 'sudo ifconfig lo0 alias 10.254.254.254'
     volumes:
-     - SITENAME-sync:/var/www/html:nocopy # Docker-sync for macOS users
+     - ./:/var/www/html:nocopy # Docker-sync for macOS users
 
-#   nginx:
-# # wodby/drupal-nginx:[DRUPAL_VERSION]-[NGINX_VERSION]-[STABILITY_TAG].
-#     # image: wodby/drupal-nginx:8-1.13-2.4.2
-#     image: wodby/drupal-nginx:7-1.13-2.4.2
-#     # image: wodby/drupal-nginx:6-1.13-2.4.2
-#     # image: wodby/drupal-nginx:8-1.12-2.4.2
-#     # image: wodby/drupal-nginx:7-1.12-2.4.2
-#     # image: wodby/drupal-nginx:6-1.12-2.4.2
-#     networks:
-#       - web
-#     depends_on:
-#       - php
-#     environment:
-#       NGINX_STATIC_CONTENT_OPEN_FILE_CACHE: "off"
-#       NGINX_ERROR_LOG_LEVEL: debug
-#       NGINX_BACKEND_HOST: php
-#       NGINX_SERVER_ROOT: /var/www/html/web
-#     volumes:
-#       - SITENAME-sync:/var/www/html # Docker-sync
-#     labels:
-#       - 'traefik.backend=nginx'
-#       - 'traefik.port=80'
-#       - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}'
+  # nginx:
+  #   # wodby/drupal-nginx:[DRUPAL_VERSION]-[NGINX_VERSION]-[STABILITY_TAG].
+  #   # image: wodby/drupal-nginx:8-1.13-3.0.2
+  #   # image: wodby/drupal-nginx:7-1.13-3.0.2
+  #   # image: wodby/drupal-nginx:6-1.13-3.0.2
+  #   # image: wodby/drupal-nginx:8-1.12-3.0.2
+  #   # image: wodby/drupal-nginx:7-1.12-3.0.2
+  #   # image: wodby/drupal-nginx:6-1.12-3.0.2
+  #   depends_on:
+  #     - php
+  #   environment:
+  #     NGINX_STATIC_CONTENT_OPEN_FILE_CACHE: "off"
+  #     NGINX_ERROR_LOG_LEVEL: debug
+  #     NGINX_BACKEND_HOST: php
+  #     NGINX_SERVER_ROOT: /var/www/html/web
+  #   volumes_from:
+  #     - php
+  #   labels:
+  #     - 'traefik.backend=${TRAEFIK_HOST}_nginx_1'
+  #     - 'traefik.port=80'
+  #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
 
-  apache:
-    image: wodby/php-apache:2.4-2.0.2
-    networks:
-      - web
-    depends_on:
-      - php
-    environment:
-      APACHE_LOG_LEVEL: debug
-      APACHE_BACKEND_HOST: php
-      APACHE_SERVER_ROOT: /var/www/html/www
-    volumes:
-     - SITENAME-sync:/var/www/html:nocopy # Docker-sync for macOS users
-    labels:
-      - 'traefik.backend=SITENAME_apache_1'
-      - 'traefik.port=80'
-      - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}'
+  # apache:
+  #   # wodby/drupal-nginx:[DRUPAL_VERSION]-[NGINX_VERSION]-[STABILITY_TAG].
+  #   image: wodby/php-apache:2.4
+  #   depends_on:
+  #     - php
+  #   environment:
+  #     APACHE_LOG_LEVEL: debug
+  #     APACHE_BACKEND_HOST: php
+  #     APACHE_SERVER_ROOT: /var/www/html/www
+  #   volumes_from:
+  #     - php
+  #   labels:
+  #     - 'traefik.backend=${TRAEFIK_HOST}_apache_1'
+  #     - 'traefik.port=80'
+  #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
 
   mailhog:
     image: mailhog/mailhog
-    networks:
-      - web
     labels:
-      - 'traefik.backend=SITENAME_mailhog_1'
+      - 'traefik.backend=${TRAEFIK_HOST}_mailhog_1'
       - 'traefik.port=8025'
-      - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}'
-
-  # athenapdf:
-  #   image: arachnysdocker/athenapdf-service
-  #   networks:
-  #     - web
-  #   environment:
-  #     WEAVER_AUTH_KEY: weaver-auth-key
-  #     WEAVER_ATHENA_CMD: "athenapdf -S"
-  #     WEAVER_MAX_WORKERS: 10
-  #     WEAVER_MAX_CONVERSION_QUEUE: 50
-  #     WEAVER_WORKER_TIMEOUT: 90
-  #     WEAVER_CONVERSION_FALLBACK: false
-
-  # # Selenium
-  # browser:
-  #   hostname: browser
-  #   # Pick/uncomment one
-  #   image: selenium/standalone-chrome
-  #   #image: selenium/standalone-firefox
-  #   networks:
-  #     - web
-
-  # phantomjs:
-  #   image: jribar/node-phantomjs
-  #   networks:
-  #     - web 
-  #   volumes_from:
-  #     - testphp
-  #   links:
-  #     - testapache
-  #   ports:
-  #     - 4444
-  #   entrypoint: phantomjs
-  #   command: "--webdriver=4444"
-
-volumes:
-  SITENAME-sync:
-   external: true
-
-networks:
-  web:
-    external:
-      name: traefik_webgateway
+      - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}.test'

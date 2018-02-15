@@ -1,0 +1,47 @@
+version: "2"
+
+services:
+  mariadb:
+    ports:
+      - 32800:3306 # choose port that does not conflict locally. X:3306
+
+  adminer:
+    image: wodby/adminer:4.3
+    environment:
+      ADMINER_SALT: adminer-salt
+    labels:
+      - 'traefik.backend=${TRAEFIK_HOST}_adminer_1'
+      - 'traefik.port=9000'
+      - 'traefik.frontend.rule=Host:adminer.${TRAEFIK_HOST}.test'
+
+  php:
+    # image: wodby/drupal-php:7.1-dev-3.3.1
+    # image: wodby/drupal-php:7.0-dev-3.3.1
+    # image: wodby/drupal-php:5.6-dev-3.3.1
+    environment:
+      PHP_XDEBUG: 1
+      PHP_XDEBUG_IDEKEY: PHPSTORM
+      PHP_XDEBUG_DEFAULT_ENABLE: 1
+      PHP_XDEBUG_REMOTE_AUTOSTART: 1
+      PHP_XDEBUG_REMOTE_CONNECT_BACK: 0         # This is needed to respect remote.host setting bellow
+      PHP_XDEBUG_REMOTE_HOST: "10.254.254.254"  # You will also need to 'sudo ifconfig lo0 alias 10.254.254.254'
+
+
+  # # Selenium
+  # browser:
+  #   hostname: browser
+  #   # Pick/uncomment one
+  #   image: selenium/standalone-chrome
+  #   #image: selenium/standalone-firefox
+
+  # phantomjs:
+  #   image: jribar/node-phantomjs
+  #   volumes_from:
+  #     - php
+  #   links:
+  #     - nginx
+  #     - apache
+  #   ports:
+  #     - 4444
+  #   entrypoint: phantomjs
+  #   command: "--webdriver=4444"

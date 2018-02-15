@@ -10,7 +10,6 @@ drush dl drupal-7 --select
 cd ..
 sed -i -e 's/SITENAME/new_project/g' .env
 sed -i -e 's/SITENAME/new_project/g' docker-compose.yml
-sed -i -e 's/SITENAME/new_project/g' docker-sync.yml
 sed -i -e 's/SITENAME/new_project/g' default.local.settings.php
 mv default.local.settings.php web/sites/default/default.local.settings.php
 mv .htaccess.default web/.htaccess.default
@@ -26,7 +25,6 @@ mkdir web
 # git mv commands
 sed -i -e 's/SITENAME/existing_project/g' .env
 sed -i -e 's/SITENAME/existing_project/g' docker-compose.yml
-sed -i -e 's/SITENAME/existing_project/g' docker-sync.yml
 sed -i -e 's/SITENAME/existing_project/g' default.local.settings.php
 mv default.local.settings.php web/sites/default/default.local.settings.php
 mv .htaccess.default web/.htaccess.default
@@ -55,13 +53,10 @@ database:
 
 ```
 
+## Install Xeno Robo
 ```bash
-# If you do not have xeno_robo
-# If you have robo already you will need to remove it 
-# `cgr consolidation/robo remove`
-# `composer global require consolidation/robo remove`
-# Install cgr if neeeded
-# `composer global require consolidation/cgr`
+cd project/root
+rm ~/.composer/vendor/bin/robo
 cgr xenomedia/xeno_robo
 ls -l `which robo`
 # should return ~/.composer/vendor/bin/robo@ -> ../../global/xenomedia/xeno_robo/vendor/consolidation/robo/robo
