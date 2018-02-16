@@ -24,7 +24,7 @@ services:
      - ./:/var/www/html:cached # Docker-sync for macOS users
 
   # nginx:
-	#   image: wodby/wordpress-nginx:4-1.13
+  #   image: wodby/wordpress-nginx:4-1.13
   # # image: wodby/wordpress-nginx:4-1.12
   #   depends_on:
   #     - php
