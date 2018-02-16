@@ -42,7 +42,7 @@ services:
       # PHP_XDEBUG_REMOTE_CONNECT_BACK: 0         # This is needed to respect remote.host setting bellow
       # PHP_XDEBUG_REMOTE_HOST: "10.254.254.254"  # You will also need to 'sudo ifconfig lo0 alias 10.254.254.254'
     volumes:
-     - SITENAME-sync:/var/www/html:nocopy # Docker-sync for macOS users
+     - ./:/var/www/html:cached # Docker-sync for macOS users
 
 #   nginx:
 # # wodby/drupal-nginx:[DRUPAL_VERSION]-[NGINX_VERSION]-[STABILITY_TAG].
@@ -61,36 +61,34 @@ services:
 #       NGINX_ERROR_LOG_LEVEL: debug
 #       NGINX_BACKEND_HOST: php
 #       NGINX_SERVER_ROOT: /var/www/html/web
-#     volumes:
-#       - SITENAME-sync:/var/www/html # Docker-sync
+#     volumes_from:
+#       - php
 #     labels:
-#       - 'traefik.backend=nginx'
+#       - 'traefik.backend=${TRAEFIK_HOST}_nginx_1'
 #       - 'traefik.port=80'
-#       - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}'
+#       - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
 
   apache:
     image: wodby/php-apache:2.4-2.0.2
-    networks:
-      - web
-    depends_on:
+      depends_on:
       - php
     environment:
       APACHE_LOG_LEVEL: debug
       APACHE_BACKEND_HOST: php
-      APACHE_SERVER_ROOT: /var/www/html/www
-    volumes:
-     - SITENAME-sync:/var/www/html:nocopy # Docker-sync for macOS users
+      APACHE_SERVER_ROOT: /var/www/html/web
+    volumes_from:
+     - php
     labels:
-      - 'traefik.backend=SITENAME_apache_1'
+      - 'traefik.backend=${TRAEFIK_HOST}_apache_1'
       - 'traefik.port=80'
-      - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}'
+      - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.text'
 
   mailhog:
     image: mailhog/mailhog
     labels:
-      - 'traefik.backend=SITENAME_mailhog_1'
+      - 'traefik.backend=${TRAEFIK_HOST}_mailhog_1'
       - 'traefik.port=8025'
-      - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}'
+      - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}.text'
 
   # athenapdf:
   #   image: arachnysdocker/athenapdf-service
@@ -108,27 +106,14 @@ services:
   #   # Pick/uncomment one
   #   image: selenium/standalone-chrome
   #   #image: selenium/standalone-firefox
-  #   networks:
-  #     - web
 
   # phantomjs:
   #   image: jribar/node-phantomjs
-  #   networks:
-  #     - web 
   #   volumes_from:
-  #     - testphp
+  #     - php
   #   links:
   #     - testapache
   #   ports:
   #     - 4444
   #   entrypoint: phantomjs
   #   command: "--webdriver=4444"
-
-volumes:
-  SITENAME-sync:
-   external: true
-
-networks:
-  web:
-    external:
-      name: traefik_webgateway

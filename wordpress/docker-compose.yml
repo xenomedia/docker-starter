@@ -21,7 +21,7 @@ services:
       PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
       PHP_FPM_CLEAR_ENV: "no"
     volumes:
-     - ./:/var/www/html:nocopy # Docker-sync for macOS users
+     - ./:/var/www/html:cached # Docker-sync for macOS users
 
   # nginx:
 	#   image: wodby/wordpress-nginx:4-1.13
@@ -36,7 +36,7 @@ services:
   #   volumes_from:
   #     - php
   #   labels:
-  #     - 'traefik.backend=SITENAME_nginx_1'
+  #     - 'traefik.backend=${TRAEFIK_HOST}_nginx_1'
   #     - 'traefik.port=80'
   #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
 
@@ -51,13 +51,13 @@ services:
   #   volumes_from:
   #    - php
   #   labels:
-  #     - 'traefik.backend=SITENAME_apache_1'
+  #     - 'traefik.backend=${TRAEFIK_HOST}_apache_1'
   #     - 'traefik.port=80'
   #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
 
   mailhog:
     image: mailhog/mailhog
     labels:
-      - 'traefik.backend=SITENAME_mailhog_1'
+      - 'traefik.backend=${TRAEFIK_HOST}_mailhog_1'
       - 'traefik.port=8025'
       - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}.test'
