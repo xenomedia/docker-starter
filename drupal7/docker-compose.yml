@@ -31,7 +31,7 @@ services:
       DB_DRIVER: mysql
       PHP_IDE_CONFIG: serverName=Docker
     volumes:
-     - ./:/var/www/html:nocopy # Docker-sync for macOS users
+     - ./:/var/www/html:cached # Docker-sync for macOS users
 
   # nginx:
   #   # wodby/drupal-nginx:[DRUPAL_VERSION]-[NGINX_VERSION]-[STABILITY_TAG].
