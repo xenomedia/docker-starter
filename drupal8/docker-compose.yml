@@ -52,8 +52,6 @@ services:
 #     # image: wodby/drupal-nginx:8-1.12-2.4.2
 #     # image: wodby/drupal-nginx:7-1.12-2.4.2
 #     # image: wodby/drupal-nginx:6-1.12-2.4.2
-#     networks:
-#       - web
 #     depends_on:
 #       - php
 #     environment:
@@ -68,20 +66,20 @@ services:
 #       - 'traefik.port=80'
 #       - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
 
-  apache:
-    image: wodby/php-apache:2.4-2.0.2
-      depends_on:
-      - php
-    environment:
-      APACHE_LOG_LEVEL: debug
-      APACHE_BACKEND_HOST: php
-      APACHE_SERVER_ROOT: /var/www/html/web
-    volumes_from:
-     - php
-    labels:
-      - 'traefik.backend=${TRAEFIK_HOST}_apache_1'
-      - 'traefik.port=80'
-      - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.text'
+  # apache:
+  #   image: wodby/php-apache:2.4-2.0.2
+  #     depends_on:
+  #     - php
+  #   environment:
+  #     APACHE_LOG_LEVEL: debug
+  #     APACHE_BACKEND_HOST: php
+  #     APACHE_SERVER_ROOT: /var/www/html/web
+  #   volumes_from:
+  #    - php
+  #   labels:
+  #     - 'traefik.backend=${TRAEFIK_HOST}_apache_1'
+  #     - 'traefik.port=80'
+  #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.text'
 
   mailhog:
     image: mailhog/mailhog
@@ -90,30 +88,11 @@ services:
       - 'traefik.port=8025'
       - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}.text'
 
-  # athenapdf:
-  #   image: arachnysdocker/athenapdf-service
-  #   environment:
-  #     WEAVER_AUTH_KEY: weaver-auth-key
-  #     WEAVER_ATHENA_CMD: "athenapdf -S"
-  #     WEAVER_MAX_WORKERS: 10
-  #     WEAVER_MAX_CONVERSION_QUEUE: 50
-  #     WEAVER_WORKER_TIMEOUT: 90
-  #     WEAVER_CONVERSION_FALLBACK: false
-
-  # # Selenium
-  # browser:
-  #   hostname: browser
-  #   # Pick/uncomment one
-  #   image: selenium/standalone-chrome
-  #   #image: selenium/standalone-firefox
-
-  # phantomjs:
-  #   image: jribar/node-phantomjs
-  #   volumes_from:
-  #     - php
-  #   links:
-  #     - testapache
-  #   ports:
-  #     - 4444
-  #   entrypoint: phantomjs
-  #   command: "--webdriver=4444"
+  adminer:
+    image: wodby/adminer:4.3
+    environment:
+      ADMINER_SALT: adminer-salt
+    labels:
+      - 'traefik.backend=${TRAEFIK_HOST}_adminer_1'
+      - 'traefik.port=9000'
+      - 'traefik.frontend.rule=Host:adminer.${TRAEFIK_HOST}.test'

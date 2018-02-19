@@ -5,15 +5,6 @@ services:
     ports:
       - 32600:3306 # choose port that does not conflict locally. X:3306
 
-  adminer:
-    image: wodby/adminer:4.3
-    environment:
-      ADMINER_SALT: adminer-salt
-    labels:
-      - 'traefik.backend=${TRAEFIK_HOST}_adminer_1'
-      - 'traefik.port=9000'
-      - 'traefik.frontend.rule=Host:adminer.${TRAEFIK_HOST}.test'
-
   php:
     # image: wodby/wordpress-php:7.2-dev
     # image: wodby/wordpress-php:7.1-dev

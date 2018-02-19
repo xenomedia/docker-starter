@@ -15,7 +15,7 @@ services:
   php:
     # image: wodby/wordpress-php:7.2
     # image: wodby/wordpress-php:7.1
-    # image: wodby/wordpress-php:7.0
+    image: wodby/wordpress-php:7.0
     # image: wodby/wordpress-php:5.6
     environment:
       PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
@@ -23,6 +23,7 @@ services:
     volumes:
      - ./:/var/www/html:cached # Docker-sync for macOS users
 
+  # # We have fond redirect issues using Apache, nginx for dev now.
   # nginx:
   #   image: wodby/wordpress-nginx:4-1.13
   # # image: wodby/wordpress-nginx:4-1.12
@@ -40,24 +41,18 @@ services:
   #     - 'traefik.port=80'
   #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
 
-  # apache:
-  #   image: wodby/php-apache:2.4
-  #   depends_on:
-  #     - php
-  #   environment:
-  #     APACHE_LOG_LEVEL: debug
-  #     APACHE_BACKEND_HOST: php
-  #     APACHE_SERVER_ROOT: /var/www/html/web
-  #   volumes_from:
-  #    - php
-  #   labels:
-  #     - 'traefik.backend=${TRAEFIK_HOST}_apache_1'
-  #     - 'traefik.port=80'
-  #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
-
   mailhog:
     image: mailhog/mailhog
     labels:
       - 'traefik.backend=${TRAEFIK_HOST}_mailhog_1'
       - 'traefik.port=8025'
       - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}.test'
+
+  adminer:
+    image: wodby/adminer:4.3
+    environment:
+      ADMINER_SALT: adminer-salt
+    labels:
+      - 'traefik.backend=${TRAEFIK_HOST}_adminer_1'
+      - 'traefik.port=9000'
+      - 'traefik.frontend.rule=Host:adminer.${TRAEFIK_HOST}.test'

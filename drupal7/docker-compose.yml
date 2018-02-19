@@ -77,3 +77,12 @@ services:
       - 'traefik.backend=${TRAEFIK_HOST}_mailhog_1'
       - 'traefik.port=8025'
       - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}.test'
+
+  adminer:
+    image: wodby/adminer:4.3
+    environment:
+      ADMINER_SALT: adminer-salt
+    labels:
+      - 'traefik.backend=${TRAEFIK_HOST}_adminer_1'
+      - 'traefik.port=9000'
+      - 'traefik.frontend.rule=Host:adminer.${TRAEFIK_HOST}.test'
