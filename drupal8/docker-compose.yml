@@ -79,14 +79,14 @@ services:
   #   labels:
   #     - 'traefik.backend=${TRAEFIK_HOST}_apache_1'
   #     - 'traefik.port=80'
-  #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.text'
+  #     - 'traefik.frontend.rule=Host:${TRAEFIK_HOST}.test'
 
   mailhog:
     image: mailhog/mailhog
     labels:
       - 'traefik.backend=${TRAEFIK_HOST}_mailhog_1'
       - 'traefik.port=8025'
-      - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}.text'
+      - 'traefik.frontend.rule=Host:mailhog.${TRAEFIK_HOST}.test'
 
   adminer:
     image: wodby/adminer:4.3
