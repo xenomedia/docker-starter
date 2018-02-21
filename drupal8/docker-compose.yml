@@ -68,7 +68,7 @@ services:
 
   # apache:
   #   image: wodby/php-apache:2.4-2.0.2
-  #     depends_on:
+  #   depends_on:
   #     - php
   #   environment:
   #     APACHE_LOG_LEVEL: debug
