@@ -44,14 +44,13 @@ pipeline {
   }
   options {
       buildDiscarder(logRotator(numToKeepStr: '7'))
+      lock("${getLabel()}")
   }
   stages {
     stage("Checkout") {
       steps {
       milestone(2)
-        lock (resource: "${getSitename()}", inversePrecedence: true) {
           checkout scm
-        }
       }
     }
 
@@ -64,7 +63,6 @@ pipeline {
       }
       steps {
         milestone(5)
-        lock (resource: "${getSitename()}", inversePrecedence: true) {
           xenoBuildWP( "${getSitename()}", env.X_DB_BACKUP, env.X_DB_USER, env.X_LIVE_DOMAIN, env.X_PREFIX, "${getLabel()}")
           echo "Build WP Start"
           sh """
@@ -76,7 +74,6 @@ pipeline {
                 wp option update pxy_settings '{\"pxy_original_url\":\"${X_LIVE_DOMAIN}/\"}'  --format=json
             """
         }
-      }
     }
     stage("Tests") {
         when {
