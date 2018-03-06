@@ -42,14 +42,13 @@ pipeline {
   }
   options {
       buildDiscarder(logRotator(numToKeepStr: '7'))
+      lock("${getLabel()}")
   }
   stages {
     stage("Checkout") {
       steps {
       milestone(2)
-        lock (resource: "${getSitename()}", inversePrecedence: true) {
           checkout scm
-        }
       }
     }
 
@@ -62,7 +61,6 @@ pipeline {
       }
       steps {
         milestone(5)
-        lock (resource: "${getSitename()}", inversePrecedence: true) {
           xenoBuildD8( "${getSitename()}", env.X_DB_BACKUP, env.X_DB_USER, env.X_LIVE_DOMAIN, "${getLabel()}")
           echo "Build Drush Start"
           sh """
@@ -70,7 +68,6 @@ pipeline {
               cd web
               drush config-set stage_file_proxy.settings origin \"${env.X_LIVE_DOMAIN}\"
             """
-        }
       }
     }
     stage("Tests") {
