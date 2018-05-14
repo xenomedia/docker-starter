@@ -16,6 +16,12 @@ def getSitename() {
         return "${SITE_NAME}-${env.BRANCH_NAME.toLowerCase()}"
     }
 }
+def getSlackname() {
+    return sh (
+          script: 'git --no-pager show -s --format=%ae',
+          returnStdout: true
+    ).trim()
+}
 pipeline {
   environment {
     // Database backup name, if it is not the site name use the known file name
@@ -25,13 +31,14 @@ pipeline {
     // The live URL, used for stage file proxy and WP find-replace
     X_LIVE_DOMAIN = "https://www.SITENAME.com"
     // Slack IDs for notification.
+    // look up at https://ww5.xenostaging.com/slack.php
     X_SLACK_NOTIFY = "<@here>"
     // Slack IDs for notification.
     X_SLACK_CHANNEL = "#jenkins-ci"
     // Code paths for phpcs checks, space delimited
     X_CODE = "web/sites/all/modules/custom/ web/sites/all/themes/theme"
     // Code paths for phpcs ignore, comma delimited
-    X_IGNORE = "web/sites/all/theme/intelligence/bootstrap/*"
+    X_IGNORE = "*/bootstrap/*"
   }
   agent {
     node {
@@ -43,11 +50,13 @@ pipeline {
     // do not run more than one build per branch
       disableConcurrentBuilds()
     // lock based on branch name, pull requests use branch name
-      lock resource: "SITENAME-${getLabel()}"
-    // timeout after 8 hours
-      timeout(time: 8, unit: 'HOURS')
+      // lock resource: "${getSitename()}"
+      lock(resource: "SITENAME", inversePrecedence: true)
+    // timeout after 1 hours
+      timeout(time: 1, unit: 'HOURS')
     // keep 7 jobs
       buildDiscarder(logRotator(numToKeepStr: '7'))
+      skipDefaultCheckout()
   }
   stages {
     stage("Checkout") {
@@ -103,12 +112,12 @@ pipeline {
            branch 'master'
         }
         steps {
-          slackNotify("${X_SLACK_NOTIFY}\nReady to review and deploy. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", "good")
+          slackNotify("${X_SLACK_NOTIFY}\nReady to review and deploy. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", "good", "${X_SLACK_NOTIFY}", "${getSlackname()}")
           script {
             timeout(time:4, unit:'DAYS') { // expires in 4 days
                 env.APPROVED_BY = input message: 'Deploy to Production?', ok: 'Release!', submitterParameter: 'APPROVER'
             } // end timeout
-            slackNotify("Approved by ${env.APPROVED_BY} and deploy started", "${X_SLACK_CHANNEL}", "good")
+            slackNotify("Approved by ${env.APPROVED_BY} and deploy started", "${X_SLACK_CHANNEL}", "good", "${X_SLACK_NOTIFY}", "${getSlackname()}")
             // customDeploy("${getSitename()}")
           }
         }
@@ -116,13 +125,13 @@ pipeline {
   }
   post {
     success {
-       slackNotify("${X_SLACK_NOTIFY}\nBuild Compete. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", "good")
+       slackNotify("${X_SLACK_NOTIFY}\nBuild Compete. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", "good", "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
     failure {
-       slackNotify("${X_SLACK_NOTIFY}\nBuild Failed. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", "danger")
+       slackNotify("${X_SLACK_NOTIFY}\nBuild Failed. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", "danger", "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
     unstable {
-       slackNotify("${X_SLACK_NOTIFY}\nBuild is unstable. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", "warning")
+       slackNotify("${X_SLACK_NOTIFY}\nBuild is unstable. https://${getSitename()}.xenostaging.com", "${X_SLACK_CHANNEL}", "warning", "${X_SLACK_NOTIFY}", "${getSlackname()}")
     }
   }
 }

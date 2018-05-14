@@ -1,6 +1,9 @@
 # Drupal 8 Setup
 
+[![Build Status](https://jenkins4.xenostaging.com/buildStatus/icon?job=xenomedia/SITENAME/master)](https://jenkins4.xenostaging.com/job/xenomedia/job/SITENAME/job/master/)
+
 ## New Project
+
 Copy the contents of this folder to a new folder i.e. ~/Sites/new_project
 
 ```bash
@@ -15,6 +18,7 @@ mv .htaccess.default web/.htaccess.default
 ```
 
 ## Existing Project
+
 Copy the contents of this folder to a new folder i.e. ~/Sites/existing_project
 
 ```bash
@@ -29,6 +33,7 @@ mv .htaccess.default web/.htaccess.default
 ## Common Commands
 
 Edit robo.yml.dist
+
 ```yml
 site:
   grunt_path: web/path/to/grunt/ # Leave blank if no grunt.
@@ -50,11 +55,9 @@ database:
 ```
 
 ## Install Xeno Robo
+
 ```bash
 cd project/root
-rm ~/.composer/vendor/bin/robo
-cgr xenomedia/xeno_robo
-ls -l `which robo`
-# should return ~/.composer/vendor/bin/robo@ -> ../../global/xenomedia/xeno_robo/vendor/consolidation/robo/robo
+composer global require xenomedia/xeno_robo
 robo setup
 ```
